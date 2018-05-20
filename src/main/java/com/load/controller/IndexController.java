@@ -1,14 +1,26 @@
 package com.load.controller;
 
+import com.load.entity.User;
+import com.load.mapper.UserMapper;
 import lombok.Data;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.*;
 import java.net.URL;
+import java.util.List;
 
 @RestController
 public class IndexController {
+
+    @Autowired
+    private UserMapper userMapper;
+
+    @GetMapping("list")
+    public List<User> list(){
+        return userMapper.list();
+    }
 
     @GetMapping("index")
     public JsonRes index(){
