@@ -4,6 +4,7 @@ import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.druid.support.http.StatViewServlet;
 import com.alibaba.druid.support.http.WebStatFilter;
 import com.github.pagehelper.PageHelper;
+import lombok.Data;
 import org.apache.ibatis.plugin.Interceptor;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.EnumOrdinalTypeHandler;
@@ -12,13 +13,12 @@ import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.annotation.MapperScan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-
 import javax.sql.DataSource;
 import java.io.File;
 import java.io.IOException;
@@ -30,67 +30,48 @@ import java.util.Objects;
 import java.util.Properties;
 
 @Configuration
-
+@Data
 @MapperScan("com.load.mapper")
+@ConfigurationProperties(prefix = "spring.datasource")
 public class DruidConfig {
 
 	private Logger logger = LoggerFactory.getLogger(DruidConfig.class);
 
-	@Value("${spring.datasource.url}")
-	private String dbUrl;
+	private String url;
 
-	@Value("${spring.datasource.username}")
 	private String username;
 
-	@Value("${spring.datasource.password}")
 	private String password;
 
-	@Value("${spring.datasource.driver-class-name}")
 	private String driverClassName;
 
-	@Value("${spring.datasource.initialSize}")
 	private int initialSize;
 
-	@Value("${spring.datasource.minIdle}")
 	private int minIdle;
 
-	@Value("${spring.datasource.maxActive}")
 	private int maxActive;
 
-	@Value("${spring.datasource.maxWait}")
 	private int maxWait;
 
-	@Value("${spring.datasource.timeBetweenEvictionRunsMillis}")
 	private int timeBetweenEvictionRunsMillis;
 
-	@Value("${spring.datasource.minEvictableIdleTimeMillis}")
 	private int minEvictableIdleTimeMillis;
 
-	@Value("${spring.datasource.validationQuery}")
 	private String validationQuery;
 
-	@Value("${spring.datasource.testWhileIdle}")
 	private boolean testWhileIdle;
 
-	@Value("${spring.datasource.testOnBorrow}")
 	private boolean testOnBorrow;
 
-	@Value("${spring.datasource.testOnReturn}")
 	private boolean testOnReturn;
 
-	@Value("${spring.datasource.filters}")
 	private String filters;
 
 	private static final String ENUM_PACKAGE = "com.load.enums";
 
 	/**
-	 * =================================================================
-	 *功 能： 设置SQL监控用户名和密码
-	--------------------------------------------------------------------
-	 *修改记录 ：
-	 *日 期  版本 修改人 修改内容
-	 *2017年9月8日 v1.0 lanlong.li 创建
-	====================================================================
+	 * 设置SQL监控用户名和密码
+	 * @return
 	 */
 	@Bean
 	public ServletRegistrationBean<StatViewServlet> druidServlet() {
@@ -103,13 +84,8 @@ public class DruidConfig {
 	}
 
 	/**
-	 * =================================================================
-	 *功 能： 设置SQL监控管理平台访问地址
-	--------------------------------------------------------------------
-	 *修改记录 ：
-	 *日 期  版本 修改人 修改内容
-	 *2017年9月8日 v1.0 lanlong.li 创建
-	====================================================================
+	 * 设置SQL监控管理平台访问地址
+	 * @return
 	 */
 	@Bean
 	public FilterRegistrationBean<WebStatFilter> filterRegistrationBean() {
@@ -122,18 +98,13 @@ public class DruidConfig {
 	}
 
 	/**
-	 * =================================================================
-	 *功 能： 注入阿里Druid连接池
-	--------------------------------------------------------------------
-	 *修改记录 ：
-	 *日 期  版本 修改人 修改内容
-	 *2017年9月8日 v1.0 lanlong.li 创建
-	====================================================================
+	 * 注入阿里Druid连接池
+	 * @return
 	 */
 	@Bean
 	public DataSource druidDataSource() {
 		DruidDataSource datasource = new DruidDataSource();
-		datasource.setUrl(dbUrl);
+		datasource.setUrl(url);
 		datasource.setUsername(username);
 		datasource.setPassword(password);
 		datasource.setDriverClassName(driverClassName);
@@ -176,7 +147,6 @@ public class DruidConfig {
 		TypeHandlerRegistry handlerRegistry = configuration.getTypeHandlerRegistry();
 		//register enums
 		registerEnums(handlerRegistry);
-//		handlerRegistry.register(Status.class, new EnumOrdinalTypeHandler<>(Status.class));
 		//to camelcase
 		configuration.setMapUnderscoreToCamelCase(true);
 		sqlSessionFactoryBean.setConfiguration(configuration);

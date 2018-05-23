@@ -15,5 +15,8 @@ public class UserMapperTest extends BaseTest {
     @Test
     public void list() {
         List<User> users = userMapper.list();
+        for (User user : users) {
+            System.out.println(user.toString());
+        }
     }
 }
