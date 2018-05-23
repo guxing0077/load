@@ -4,11 +4,9 @@ import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.druid.support.http.StatViewServlet;
 import com.alibaba.druid.support.http.WebStatFilter;
 import com.github.pagehelper.PageHelper;
-import com.load.enums.Status;
 import org.apache.ibatis.plugin.Interceptor;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.EnumOrdinalTypeHandler;
-import org.apache.ibatis.type.TypeHandler;
 import org.apache.ibatis.type.TypeHandlerRegistry;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.annotation.MapperScan;
@@ -24,14 +22,15 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import javax.sql.DataSource;
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Type;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Enumeration;
+import java.util.Objects;
+import java.util.Properties;
 
 @Configuration
+
 @MapperScan("com.load.mapper")
 public class DruidConfig {
 

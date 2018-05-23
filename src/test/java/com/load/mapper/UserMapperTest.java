@@ -7,8 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
-import static org.junit.Assert.*;
-
 public class UserMapperTest extends BaseTest {
 
     @Autowired
