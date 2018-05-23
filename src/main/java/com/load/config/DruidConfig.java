@@ -3,7 +3,14 @@ package com.load.config;
 import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.druid.support.http.StatViewServlet;
 import com.alibaba.druid.support.http.WebStatFilter;
-import lombok.Data;
+import com.github.pagehelper.PageHelper;
+import com.load.enums.Status;
+import org.apache.ibatis.plugin.Interceptor;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.type.EnumOrdinalTypeHandler;
+import org.apache.ibatis.type.TypeHandler;
+import org.apache.ibatis.type.TypeHandlerRegistry;
+import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.annotation.MapperScan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,9 +19,17 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 import javax.sql.DataSource;
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Type;
+import java.net.URL;
+import java.net.URLDecoder;
 import java.sql.SQLException;
+import java.util.*;
 
 @Configuration
 @MapperScan("com.load.mapper")
@@ -67,6 +82,8 @@ public class DruidConfig {
 	@Value("${spring.datasource.filters}")
 	private String filters;
 
+	private static final String ENUM_PACKAGE = "com.load.enums";
+
 	/**
 	 * =================================================================
 	 *功 能： 设置SQL监控用户名和密码
@@ -77,8 +94,8 @@ public class DruidConfig {
 	====================================================================
 	 */
 	@Bean
-	public ServletRegistrationBean druidServlet() {
-		ServletRegistrationBean reg = new ServletRegistrationBean();
+	public ServletRegistrationBean<StatViewServlet> druidServlet() {
+		ServletRegistrationBean<StatViewServlet> reg = new ServletRegistrationBean<>();
 		reg.setServlet(new StatViewServlet());
 		reg.addUrlMappings("/druid/*");
 		reg.addInitParameter("loginUsername", username);
@@ -96,8 +113,8 @@ public class DruidConfig {
 	====================================================================
 	 */
 	@Bean
-	public FilterRegistrationBean filterRegistrationBean() {
-		FilterRegistrationBean filterRegistrationBean = new FilterRegistrationBean();
+	public FilterRegistrationBean<WebStatFilter> filterRegistrationBean() {
+		FilterRegistrationBean<WebStatFilter> filterRegistrationBean = new FilterRegistrationBean<>();
 		filterRegistrationBean.setFilter(new WebStatFilter());
 		filterRegistrationBean.addUrlPatterns("/*");
 		filterRegistrationBean.addInitParameter("exclusions", "*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*");
@@ -139,4 +156,65 @@ public class DruidConfig {
 		return datasource;
 	}
 
+	@Bean
+	public SqlSessionFactory sqlSessionFactory() throws Exception {
+		SqlSessionFactoryBean sqlSessionFactoryBean = new SqlSessionFactoryBean();
+		//dataSource
+		sqlSessionFactoryBean.setDataSource(druidDataSource());
+		//scan mappers
+		sqlSessionFactoryBean.setMapperLocations(new PathMatchingResourcePatternResolver()
+				.getResources("classpath*:mappers/*Mapper.xml"));
+		//scan alias
+		sqlSessionFactoryBean.setTypeAliasesPackage("com.load.entity");
+		//plugins
+		sqlSessionFactoryBean.setPlugins(new Interceptor[]{
+				//pageHelper
+				pageHelper()
+		});
+		//configuration
+		org.apache.ibatis.session.Configuration configuration = new org.apache.ibatis.session.Configuration();
+		//handlerRegistry
+		TypeHandlerRegistry handlerRegistry = configuration.getTypeHandlerRegistry();
+		//register enums
+		registerEnums(handlerRegistry);
+//		handlerRegistry.register(Status.class, new EnumOrdinalTypeHandler<>(Status.class));
+		//to camelcase
+		configuration.setMapUnderscoreToCamelCase(true);
+		sqlSessionFactoryBean.setConfiguration(configuration);
+		return sqlSessionFactoryBean.getObject();
+	}
+
+	/**
+	 * 注册所有的枚举
+	 * @param handlerRegistry 类型处理注册器
+	 */
+	private void registerEnums(TypeHandlerRegistry handlerRegistry) throws IOException, ClassNotFoundException {
+	    //文件夹路径
+		String packageDirName = ENUM_PACKAGE.replace('.', '/');
+		Enumeration<URL> dirs = Thread.currentThread().getContextClassLoader().getResources(packageDirName);
+		URL url = dirs.nextElement();
+		String filePath = URLDecoder.decode(url.getFile(), "UTF-8");
+		File enumFiles = new File(filePath);
+		for (File file : Objects.requireNonNull(enumFiles.listFiles())) {
+			String fileName = file.getAbsolutePath();
+			//获取类名
+			String className = fileName.substring(fileName.lastIndexOf("/") + 1, fileName.lastIndexOf("."));
+			//获取类类型
+			Class enumClass = Class.forName(ENUM_PACKAGE+"."+className);
+			//注册枚举
+			handlerRegistry.register(enumClass, new EnumOrdinalTypeHandler<>(enumClass));
+		}
+	}
+
+    /**
+     * 分页插件PageHelper
+     * @return
+     */
+	private PageHelper pageHelper(){
+		PageHelper pageHelper = new PageHelper();
+		Properties properties = new Properties();
+		properties.setProperty("dialect", "mysql");
+		pageHelper.setProperties(properties);
+		return pageHelper;
+	}
 }
